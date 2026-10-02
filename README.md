@@ -48,6 +48,13 @@ Open http://localhost:8080 and try: *"How much do I owe?"*, *"Send me a link to 
 ./mvnw test
 ```
 
+### With PostgreSQL (data survives restarts)
+
+```bash
+docker compose up -d
+./mvnw spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=postgres"
+```
+
 ## API
 
 | Method | Path | What it does |
@@ -60,11 +67,13 @@ Open http://localhost:8080 and try: *"How much do I owe?"*, *"Send me a link to 
 
 ## Stack
 
-Java 21, Spring Boot 4, Spring Data JPA, H2 (PostgreSQL planned), Gemini via OpenAI-compatible API, JUnit 5.
+Java 21, Spring Boot 4, Spring Data JPA, PostgreSQL (Docker Compose), H2 for tests, Gemini via OpenAI-compatible API, JUnit 5.
 
 ## Roadmap
 
 - [ ] Post-chat summary: intent, promised date, amount, sentiment as structured data
 - [ ] Eval suite of scripted conversations (extraction accuracy, invented promises)
-- [ ] PostgreSQL + Redis, Docker Compose
+- [x] PostgreSQL with Docker Compose
+- [x] Automatic retries when the model API is busy
+- [ ] Redis caching
 - [ ] React front end

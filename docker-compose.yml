@@ -1,0 +1,14 @@
+# Local PostgreSQL for PayNudge:  docker compose up -d
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: paynudge
+      POSTGRES_USER: paynudge
+      POSTGRES_PASSWORD: paynudge   # local development only
+    ports:
+      - "5433:5432"                 # 5433 on your machine, so it never clashes with another PostgreSQL
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
