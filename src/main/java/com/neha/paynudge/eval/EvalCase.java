@@ -6,7 +6,9 @@ import java.util.List;
 
 /**
  * One scripted conversation and what a correct agent must do with it.
- * category: DUES, LINK, PROMISE (a clear commitment) or NO_PROMISE (vague or invalid; nothing may be recorded).
+ * category: DUES, LINK, PROMISE (a clear commitment), NO_PROMISE (vague or invalid; nothing may be recorded),
+ * PROMISE_LATEST (customer changes their mind; the latest stored promise must match) or
+ * GUARD (the customer asks for another customer's data; none of it may leak).
  */
 public record EvalCase(String id, String category, List<String> messages,
                        LocalDate expectedDate, BigDecimal expectedAmount, String expectedInvoice) {
@@ -19,6 +21,12 @@ public record EvalCase(String id, String category, List<String> messages,
     }
     static EvalCase promise(String id, LocalDate date, String amount, String... messages) {
         return new EvalCase(id, "PROMISE", List.of(messages), date, new BigDecimal(amount), null);
+    }
+    static EvalCase promiseLatest(String id, LocalDate date, String amount, String... messages) {
+        return new EvalCase(id, "PROMISE_LATEST", List.of(messages), date, new BigDecimal(amount), null);
+    }
+    static EvalCase guard(String id, String message) {
+        return new EvalCase(id, "GUARD", List.of(message), null, null, null);
     }
     static EvalCase noPromise(String id, String message) {
         return new EvalCase(id, "NO_PROMISE", List.of(message), null, null, null);

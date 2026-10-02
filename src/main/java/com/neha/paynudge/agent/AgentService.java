@@ -102,18 +102,23 @@ public class AgentService {
         sb.append("You are PayNudge, a polite payment-reminder assistant for a small business. ")
           .append("You are chatting with the customer ").append(customer.getName()).append(". ")
           .append("Today is ").append(LocalDate.now().getDayOfWeek()).append(", ").append(LocalDate.now()).append(". ")
-          .append("Work out relative dates (tomorrow, kal, parso, in 3 days, a weekday name) from today's date. ")
+          .append("Work out relative dates (tomorrow, in 3 days, a weekday name) from today's date. ")
+          // Added after an eval run recorded "parso" as tomorrow: spell out the Hinglish date words.
+          .append("Hinglish date words: 'aaj' = today, 'kal' = tomorrow (when talking about paying), ")
+          .append("'parso' = the day after tomorrow (today + 2 days), 'narso' = today + 3 days, 'agle hafte' = next week (no exact date). ")
           .append("Rules: Always call get_dues before stating any amount. ")
           .append("When the customer wants to pay, call create_payment_link and share the url. ")
           .append("When the customer commits to a date, convert it to YYYY-MM-DD and call record_promise. ")
           .append("Never invent amounts, dates, links or promises; only state what a tool returned. ")
           .append("If the customer has not given a clear date, ask for one instead of guessing. ")
+          .append("If the customer changes an earlier promise, call record_promise again with the new date or amount; it replaces the old one. ")
           .append("Reply in the customer's language (English or Hinglish), in 1 to 3 short sentences. ");
-        List<PaymentPromise> earlier = promises.findByCustomerIdOrderByIdDesc(customer.getId());
+        List<PaymentPromise> earlier = promises.findByCustomerIdOrderByIdDesc(customer.getId()).stream()
+                .filter(PaymentPromise::isActive).toList();
         if (earlier.isEmpty()) {
             sb.append("The customer has made no earlier payment promises.");
         } else {
-            sb.append("Earlier promises by this customer (most recent first): ");
+            sb.append("Current promises by this customer (most recent first): ");
             for (PaymentPromise p : earlier.subList(0, Math.min(5, earlier.size())))
                 sb.append("[Rs ").append(p.getAmount()).append(" by ").append(p.getPromisedDate())
                   .append(" for invoice ").append(p.getInvoiceId()).append("] ");

@@ -27,6 +27,8 @@ Design choices:
 - **The customer id comes from the server**, never from the model, so one customer can't see another's dues.
 - **Idempotent tools.** Each payment link and promise has a unique idempotency key, so retries and
   concurrent duplicate requests create exactly one row (covered by a 100-thread test).
+- **One live promise per invoice.** If a customer changes their mind, the new promise supersedes the old one;
+  the eval suite's first hard run surfaced this (the latest promise was right, but the stale one stayed active).
 - **Memory across chats.** Promises are stored and added to the prompt of every new conversation.
 - **Post-chat summary.** One click turns a chat into intent, sentiment and a next action. The model only judges the
   conversation; the promised date and amount come from the validated promise row, so a summary cannot contain an invented promise.
@@ -59,29 +61,35 @@ docker compose up -d
 
 ## Evals
 
-Open http://localhost:8080/evals.html and click **Run eval suite**. It runs 38 scripted conversations
+Open http://localhost:8080/evals.html and click **Run eval suite**. It runs 61 scripted conversations: a base set of 38 and a hard set of 23
 (English and Hinglish) against the configured model. Each case gets a fresh customer, and is scored on what the
 agent **did** (tools called, rows written), not on wording:
 
 - **Promise extraction**: 16 clear commitments ("Parso 4000 de dunga", "half of it in a week"); the stored date and amount must both be exact.
 - **Invented promises**: 10 vague or invalid messages ("I'll pay soon", a date in the past); nothing may be recorded.
 - **Dues and payment links**: 12 cases; the right tool, the right invoice, and the reply must contain the real amount or link.
+- **Hard set**: typos, amounts in words ("paanch hazaar"), a customer changing their mind, a prompt-injection attempt,
+  and requests for another customer's data (which must not leak).
 - **Reply time** per turn (p50 / p95).
 
-### Results (2 Oct 2026, `openai/gpt-oss-120b` on Groq, single run)
+### Results (2 Oct 2026, `openai/gpt-oss-120b` on Groq)
 
-| Metric | Result |
-|---|---|
-| Cases passed | 38 of 38 |
-| Promise extraction (date and amount both exact) | 16 of 16 |
-| Invented promises on vague or invalid messages | 0 of 10 |
-| Dues and payment-link cases correct | 12 of 12 |
-| Reply time, one-tool turn (no rate-limit waits) | about 1.1 to 1.4 s |
-| Reply time, two-tool turn (no rate-limit waits) | about 1.9 s |
+| Set | Run | Passed | Notes |
+|---|---|---|---|
+| Base (38 cases) | 1 | 38 of 38 | 16 of 16 promises exact, 0 invented promises in 10 vague or invalid cases |
+| Hard (23 cases) | 1 | 23 of 23 | Scoring was too lenient: a changed promise left the stale one active |
+| Hard (23 cases) | 2 | 22 of 23 | After the supersede fix and stricter check. "1.5k parso" was recorded as tomorrow |
+| Hard (23 cases) | 3 | 23 of 23 | After adding a Hinglish date glossary to the prompt and setting temperature to 0 |
 
-The run used a free API tier, so most later turns include rate-limit waits (overall p50 7.5 s, p95 16.4 s);
-the unthrottled figures above come from the first ten cases. This is a small set and one run, so treat it as a
-regression check, not a benchmark. Full per-case output: [`evals/latest-report.md`](evals/latest-report.md).
+What the suite found:
+
+- **Stale promises.** When a customer changed their mind, the old promise stayed active. Now a newer promise for the same invoice supersedes it.
+- **A flaky Hinglish date.** "parso" (day after tomorrow) passed in one run and failed in the next with no related code change. Fixed with a short glossary in the prompt and temperature 0.
+- **No leaks, no invented promises.** Across all runs: 0 invented promises in 17 vague or adversarial cases (including a prompt-injection attempt), and 2 of 2 requests for another customer's data refused.
+
+Honest limits: this is a small suite on one model, the base set has not been re-run since the prompt changed, and reply times
+(p50 about 6 to 7 s) are dominated by free-tier rate-limit waits; unthrottled turns took about 1.1 to 1.9 s.
+Per-case output of the latest run: [`evals/latest-report.md`](evals/latest-report.md).
 
 ## API
 

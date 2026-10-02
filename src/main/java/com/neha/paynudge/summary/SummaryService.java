@@ -57,7 +57,8 @@ public class SummaryService {
         if (nextAction.length() > 500) nextAction = nextAction.substring(0, 500);
 
         // Facts come from the database, not from the model.
-        List<PaymentPromise> recorded = promises.findByCustomerIdOrderByIdDesc(customerId);
+        List<PaymentPromise> recorded = promises.findByCustomerIdOrderByIdDesc(customerId).stream()
+                .filter(PaymentPromise::isActive).toList();
         PaymentPromise latest = recorded.isEmpty() ? null : recorded.get(0);
         if (latest == null && intent.equals("PROMISED_TO_PAY")) intent = "NEEDS_MORE_TIME"; // no stored promise, so not a promise
 

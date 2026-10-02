@@ -28,7 +28,7 @@ public class ApiLlmClient implements LlmClient {
         body.put("model", model);
         body.put("messages", messages);
         if (tools != null && !tools.isEmpty()) body.put("tools", tools);
-        body.put("temperature", 0.2);
+        body.put("temperature", 0);   // same input should give the same tool call
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))
                 .timeout(Duration.ofSeconds(60))

@@ -90,4 +90,16 @@ class PayNudgeFlowTests {
         assertEquals(date, summary.getPromisedDate().toString());
         assertNotNull(summary.getNextAction());
     }
+
+    @Test
+    void newerPromiseSupersedesTheOlderOne() {
+        Long third = customers.findAll().get(2).getId();
+        tools.recordPromise(third, null, new java.math.BigDecimal("1000"), LocalDate.now().plusDays(1).toString());
+        tools.recordPromise(third, null, new java.math.BigDecimal("1000"), LocalDate.now().plusDays(3).toString());
+        long active = promises.findByCustomerIdOrderByIdDesc(third).stream()
+                .filter(p -> p.isActive() && p.getAmount().intValue() == 1000).count();
+        assertEquals(1, active);
+        assertEquals(LocalDate.now().plusDays(3), promises.findByCustomerIdOrderByIdDesc(third).stream()
+                .filter(p -> p.isActive()).findFirst().orElseThrow().getPromisedDate());
+    }
 }

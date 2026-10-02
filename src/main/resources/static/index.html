@@ -63,7 +63,7 @@ async function refreshSide() {
   $('dues').innerHTML = `<strong>Total: ₹${esc(d.total_due)}</strong><ul>` +
     d.invoices.map(i => `<li>#${esc(i.invoice_id)} ${esc(i.description)}: ₹${esc(i.amount)} (${i.days_overdue > 0 ? esc(i.days_overdue) + ' days overdue' : 'due ' + esc(i.due_date)})</li>`).join('') + '</ul>';
   const p = await api(`/customers/${customerId}/promises`);
-  $('promises').innerHTML = p.length ? '<ul>' + p.map(x => `<li>₹${esc(x.amount)} by ${esc(x.promisedDate)} (invoice #${esc(x.invoiceId)})</li>`).join('') + '</ul>' : 'None yet.';
+  $('promises').innerHTML = p.length ? '<ul>' + p.map(x => `<li${x.active ? '' : ' style="text-decoration:line-through;opacity:.6"'}>₹${esc(x.amount)} by ${esc(x.promisedDate)} (invoice #${esc(x.invoiceId)})${x.active ? '' : ' replaced'}</li>`).join('') + '</ul>' : 'None yet.';
 }
 async function loadCustomer() {
   customerId = $('customer').value; $('log').innerHTML = '';

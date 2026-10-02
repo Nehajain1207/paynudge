@@ -16,6 +16,8 @@ public class PaymentPromise {
     private LocalDate promisedDate;
     @Column(unique = true, nullable = false)
     private String idempotencyKey;
+    /** ACTIVE, or SUPERSEDED once the customer gives a newer promise for the same invoice. */
+    private String status = "ACTIVE";
     private Instant createdAt = Instant.now();
 
     protected PaymentPromise() {}
@@ -31,4 +33,7 @@ public class PaymentPromise {
     public LocalDate getPromisedDate() { return promisedDate; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getStatus() { return status == null ? "ACTIVE" : status; }
+    public boolean isActive() { return !"SUPERSEDED".equals(status); }
+    public void setStatus(String status) { this.status = status; }
 }

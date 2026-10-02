@@ -31,6 +31,7 @@
   <div class="muted">Scripted conversations scored on what the agent did: tools called and rows written. <a href="/">Back to chat</a></div>
   <div class="bar">
     <button id="run">Run eval suite</button>
+    <button id="runHard">Run hard set only</button>
     <span id="progress" class="muted"></span>
   </div>
   <div class="tiles" id="tiles"></div>
@@ -47,7 +48,7 @@ let timer;
 
 async function refresh() {
   const s = await fetch('/api/evals/status').then(r => r.json());
-  $('run').disabled = s.running;
+  $('run').disabled = s.running; $('runHard').disabled = s.running;
   $('progress').textContent = s.total ? `${s.done} of ${s.total} cases · model: ${s.model}${s.running ? ' · running…' : ''}` : `model: ${s.model}`;
   if (s.results.length) $('rows').innerHTML = s.results.map(r => `<tr>
       <td>${esc(r.id)}</td><td>${esc(r.input)}</td>
@@ -60,15 +61,19 @@ async function refresh() {
     tile(`promise extraction (${m.promiseCases} cases)`, m.promiseExtractionPct + '%'),
     tile(`invented promises (${m.noPromiseCases} cases)`, m.inventedPromises),
     tile(`dues + link correct (${m.duesAndLinkCases} cases)`, m.duesAndLinkPct + '%'),
+    tile(`hard set passed (${m.hardCases} cases)`, `${m.hardPassed} / ${m.hardCases}`),
+    tile(`other customers' data kept private`, `${m.guardPassed} / ${m.guardCases}`),
     tile('reply time p50 / p95', `${m.latencyP50Ms} / ${m.latencyP95Ms} ms`),
     tile('API errors (not scored)', m.errors)
   ].join('') : '';
   if (!s.running) clearInterval(timer);
 }
-$('run').addEventListener('click', async () => {
-  await fetch('/api/evals/run', { method: 'POST' });
+async function startRun(set) {
+  await fetch('/api/evals/run?set=' + set, { method: 'POST' });
   clearInterval(timer); timer = setInterval(refresh, 2000); refresh();
-});
+}
+$('run').addEventListener('click', () => startRun('all'));
+$('runHard').addEventListener('click', () => startRun('hard'));
 refresh(); timer = setInterval(refresh, 2000);
 </script>
 </body>

@@ -73,7 +73,10 @@ public class CollectionTools {
         return out;
     }
 
-    /** Idempotent: the same promise (invoice, amount, date) is stored once, however often it is repeated. */
+    /**
+     * Idempotent: the same promise (invoice, amount, date) is stored once, however often it is repeated.
+     * A different promise for the same invoice supersedes the earlier one, so only the latest stays active.
+     */
     public Map<String, Object> recordPromise(Long customerId, Long invoiceId, BigDecimal amount, String promisedDate) {
         Invoice inv = resolveInvoice(customerId, invoiceId);
         if (inv == null) return error("No unpaid invoice found for this customer.");
@@ -93,6 +96,17 @@ public class CollectionTools {
             } catch (DataIntegrityViolationException raceLost) {
                 promise = promises.findByIdempotencyKey(key).orElseThrow();
             }
+        }
+        // A customer has one live commitment per invoice: a newer promise replaces the older ones.
+        for (PaymentPromise other : promises.findByCustomerIdOrderByIdDesc(customerId)) {
+            if (other.getInvoiceId().equals(inv.getId()) && !other.getId().equals(promise.getId()) && other.isActive()) {
+                other.setStatus("SUPERSEDED");
+                promises.save(other);
+            }
+        }
+        if (!promise.isActive()) {   // the customer went back to an earlier promise
+            promise.setStatus("ACTIVE");
+            promise = promises.save(promise);
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("promise_id", promise.getId());

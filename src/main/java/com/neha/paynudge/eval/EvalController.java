@@ -12,8 +12,8 @@ public class EvalController {
     public EvalController(EvalService evals) { this.evals = evals; }
 
     @PostMapping("/run")
-    public Map<String, Object> run() {
-        boolean started = evals.start();
+    public Map<String, Object> run(@RequestParam(defaultValue = "all") String set) {
+        boolean started = evals.start(set);
         return Map.of("started", started);
     }
 
