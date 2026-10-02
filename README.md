@@ -28,6 +28,8 @@ Design choices:
 - **Idempotent tools.** Each payment link and promise has a unique idempotency key, so retries and
   concurrent duplicate requests create exactly one row (covered by a 100-thread test).
 - **Memory across chats.** Promises are stored and added to the prompt of every new conversation.
+- **Post-chat summary.** One click turns a chat into intent, sentiment and a next action. The model only judges the
+  conversation; the promised date and amount come from the validated promise row, so a summary cannot contain an invented promise.
 - **Offline mock model.** With no API key the app runs on a rule-based stand-in, so tests are free and repeatable.
 
 ## Run it
@@ -90,6 +92,8 @@ regression check, not a benchmark. Full per-case output: [`evals/latest-report.m
 | GET | `/api/customers/{id}/promises` | Recorded promises |
 | GET | `/api/customers/{id}/messages` | Chat history |
 | POST | `/api/customers/{id}/chat` | Send a message to the agent |
+| POST | `/api/customers/{id}/summary` | Summarise the chat into structured data |
+| GET | `/api/customers/{id}/summaries` | Past summaries |
 | POST | `/api/evals/run` | Start the eval suite |
 | GET | `/api/evals/status` | Eval progress and results |
 
@@ -99,7 +103,7 @@ Java 21, Spring Boot 4, Spring Data JPA, PostgreSQL (Docker Compose), H2 for tes
 
 ## Roadmap
 
-- [ ] Post-chat summary: intent, promised date, amount, sentiment as structured data
+- [x] Post-chat summary: intent, sentiment, next action, with promise facts taken from the database
 - [x] Eval suite of scripted conversations (extraction accuracy, invented promises)
 - [x] PostgreSQL with Docker Compose
 - [x] Automatic retries when the model API is busy

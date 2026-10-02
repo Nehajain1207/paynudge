@@ -4,6 +4,8 @@ import com.neha.paynudge.agent.AgentService;
 import com.neha.paynudge.repo.CustomerRepository;
 import com.neha.paynudge.repo.PaymentLinkRepository;
 import com.neha.paynudge.repo.PaymentPromiseRepository;
+import com.neha.paynudge.model.ChatSummary;
+import com.neha.paynudge.summary.SummaryService;
 import com.neha.paynudge.tools.CollectionTools;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ class PayNudgeFlowTests {
     @Autowired CustomerRepository customers;
     @Autowired PaymentLinkRepository links;
     @Autowired PaymentPromiseRepository promises;
+    @Autowired SummaryService summaryService;
 
     Long customerId;
 
@@ -75,5 +78,16 @@ class PayNudgeFlowTests {
     void pastDatesAreRejected() {
         Map<String, Object> result = tools.recordPromise(customerId, null, null, LocalDate.now().minusDays(1).toString());
         assertTrue(result.containsKey("error"));
+    }
+
+    @Test
+    void summaryTakesPromiseFactsFromTheDatabase() {
+        Long third = customers.findAll().get(2).getId();
+        String date = LocalDate.now().plusDays(2).toString();
+        agent.chat(third, "I will pay on " + date);
+        ChatSummary summary = summaryService.summarise(third);
+        assertEquals("PROMISED_TO_PAY", summary.getIntent());
+        assertEquals(date, summary.getPromisedDate().toString());
+        assertNotNull(summary.getNextAction());
     }
 }

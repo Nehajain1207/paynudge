@@ -27,7 +27,7 @@ public class ApiLlmClient implements LlmClient {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
         body.put("messages", messages);
-        body.put("tools", tools);
+        if (tools != null && !tools.isEmpty()) body.put("tools", tools);
         body.put("temperature", 0.2);
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))

@@ -2,11 +2,14 @@ package com.neha.paynudge.web;
 
 import com.neha.paynudge.agent.AgentService;
 import com.neha.paynudge.model.ChatMessage;
+import com.neha.paynudge.model.ChatSummary;
 import com.neha.paynudge.model.Customer;
 import com.neha.paynudge.model.PaymentPromise;
 import com.neha.paynudge.repo.ChatMessageRepository;
+import com.neha.paynudge.repo.ChatSummaryRepository;
 import com.neha.paynudge.repo.CustomerRepository;
 import com.neha.paynudge.repo.PaymentPromiseRepository;
+import com.neha.paynudge.summary.SummaryService;
 import com.neha.paynudge.tools.CollectionTools;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -24,11 +27,15 @@ public class ChatController {
     private final CustomerRepository customers;
     private final ChatMessageRepository chatMessages;
     private final PaymentPromiseRepository promises;
+    private final SummaryService summaryService;
+    private final ChatSummaryRepository summaries;
 
     public ChatController(AgentService agent, CollectionTools tools, CustomerRepository customers,
-                          ChatMessageRepository chatMessages, PaymentPromiseRepository promises) {
+                          ChatMessageRepository chatMessages, PaymentPromiseRepository promises,
+                          SummaryService summaryService, ChatSummaryRepository summaries) {
         this.agent = agent; this.tools = tools; this.customers = customers;
         this.chatMessages = chatMessages; this.promises = promises;
+        this.summaryService = summaryService; this.summaries = summaries;
     }
 
     public record ChatRequest(@NotBlank @Size(max = 1000) String message) {}
@@ -46,6 +53,12 @@ public class ChatController {
 
     @GetMapping("/customers/{id}/messages")
     public List<ChatMessage> messages(@PathVariable Long id) { return chatMessages.findByCustomerIdOrderByIdAsc(id); }
+
+    @PostMapping("/customers/{id}/summary")
+    public ChatSummary summarise(@PathVariable Long id) { return summaryService.summarise(id); }
+
+    @GetMapping("/customers/{id}/summaries")
+    public List<ChatSummary> summaries(@PathVariable Long id) { return summaries.findByCustomerIdOrderByIdDesc(id); }
 
     @PostMapping("/customers/{id}/chat")
     public AgentService.ChatResult chat(@PathVariable Long id, @Valid @RequestBody ChatRequest request) {

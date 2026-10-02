@@ -44,6 +44,8 @@
   <div class="side">
     <div class="card"><h2>Dues</h2><div id="dues" class="muted">Loading…</div></div>
     <div class="card"><h2>Recorded promises</h2><div id="promises" class="muted">None yet.</div></div>
+    <div class="card"><h2>Chat summary</h2><div id="summary" class="muted">Not summarised yet.</div>
+      <button id="summarise" style="margin-top:10px">Summarise chat</button></div>
   </div>
 </div>
 <script>
@@ -67,8 +69,20 @@ async function loadCustomer() {
   customerId = $('customer').value; $('log').innerHTML = '';
   const history = await api(`/customers/${customerId}/messages`);
   history.forEach(m => bubble(m.role, m.content));
+  api(`/customers/${customerId}/summaries`).then(list => showSummary(list[0]));
   refreshSide();
 }
+function showSummary(x) {
+  $('summary').innerHTML = x ? `<ul><li><strong>Intent:</strong> ${esc(x.intent)}</li><li><strong>Sentiment:</strong> ${esc(x.sentiment)}</li>` +
+    (x.promisedDate ? `<li><strong>Promised:</strong> ₹${esc(x.promisedAmount)} by ${esc(x.promisedDate)}</li>` : '') +
+    `<li><strong>Next action:</strong> ${esc(x.nextAction)}</li></ul>` : 'Not summarised yet.';
+}
+$('summarise').addEventListener('click', async () => {
+  $('summarise').disabled = true;
+  try { showSummary(await api(`/customers/${customerId}/summary`, { method: 'POST' })); }
+  catch (err) { $('summary').textContent = 'Could not summarise (' + err.message + '). Send a message first, or check the server log.'; }
+  $('summarise').disabled = false;
+});
 $('form').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('text').value.trim(); if (!text) return;

@@ -18,6 +18,12 @@ public class MockLlmClient implements LlmClient {
         Map<String, Object> last = messages.get(messages.size() - 1);
         String text = String.valueOf(last.get("content"));
 
+        if (tools == null || tools.isEmpty()) {   // a summary request: reply with JSON only
+            boolean promised = DATE.matcher(text).find();
+            return text(promised
+                    ? "{\"intent\":\"PROMISED_TO_PAY\",\"sentiment\":\"POSITIVE\",\"next_action\":\"Check for the payment on the promised date.\"}"
+                    : "{\"intent\":\"ASKED_FOR_DUES\",\"sentiment\":\"NEUTRAL\",\"next_action\":\"Follow up in a few days.\"}");
+        }
         if ("tool".equals(last.get("role")))
             return text("Here is what I found: " + text);
 
