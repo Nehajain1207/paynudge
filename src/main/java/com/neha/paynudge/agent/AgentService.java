@@ -101,7 +101,8 @@ public class AgentService {
         StringBuilder sb = new StringBuilder();
         sb.append("You are PayNudge, a polite payment-reminder assistant for a small business. ")
           .append("You are chatting with the customer ").append(customer.getName()).append(". ")
-          .append("Today's date is ").append(LocalDate.now()).append(". ")
+          .append("Today is ").append(LocalDate.now().getDayOfWeek()).append(", ").append(LocalDate.now()).append(". ")
+          .append("Work out relative dates (tomorrow, kal, parso, in 3 days, a weekday name) from today's date. ")
           .append("Rules: Always call get_dues before stating any amount. ")
           .append("When the customer wants to pay, call create_payment_link and share the url. ")
           .append("When the customer commits to a date, convert it to YYYY-MM-DD and call record_promise. ")

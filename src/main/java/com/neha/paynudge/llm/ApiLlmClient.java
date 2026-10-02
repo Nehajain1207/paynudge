@@ -14,7 +14,7 @@ import java.util.Map;
 /** Calls a real model over an OpenAI-compatible HTTP endpoint (Gemini by default). */
 public class ApiLlmClient implements LlmClient {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-    private static final int MAX_ATTEMPTS = 4;
+    private static final int MAX_ATTEMPTS = 5;
     private final String baseUrl, apiKey, model;
 
     public ApiLlmClient(String baseUrl, String apiKey, String model) {
@@ -44,7 +44,11 @@ public class ApiLlmClient implements LlmClient {
                 int status = response.statusCode();
                 boolean retryable = status == 429 || status >= 500;
                 if (!retryable || attempt == MAX_ATTEMPTS) break;
-                Thread.sleep(1000L * attempt * attempt);
+                // Rate limits (429) usually say how long to wait in a Retry-After header; otherwise back off.
+                long waitMs = response.headers().firstValue("retry-after")
+                        .map(v -> { try { return (long) (Double.parseDouble(v) * 1000) + 500; } catch (NumberFormatException e) { return 0L; } })
+                        .filter(v -> v > 0).orElse(1000L * attempt * attempt);
+                Thread.sleep(Math.min(waitMs, 65_000));
             }
             if (response.statusCode() != 200)
                 throw new IllegalStateException("Model API returned " + response.statusCode() + ": " + response.body());

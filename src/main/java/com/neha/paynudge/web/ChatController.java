@@ -34,7 +34,9 @@ public class ChatController {
     public record ChatRequest(@NotBlank @Size(max = 1000) String message) {}
 
     @GetMapping("/customers")
-    public List<Customer> customers() { return customers.findAll(); }
+    public List<Customer> customers() {
+        return customers.findAll().stream().filter(c -> !c.getName().startsWith("[eval]")).toList();
+    }
 
     @GetMapping("/customers/{id}/dues")
     public Map<String, Object> dues(@PathVariable Long id) { return tools.getDues(id); }
